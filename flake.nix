@@ -19,7 +19,7 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ rust-overlay.overlays.default ] ++ import ./nix/overlays ++ import ./toolchains/nix/overlays;
+        overlays = [ rust-overlay.overlays.default ] ++ import ./toolchains/nix/overlays;
         config = {
           allowUnfree = true;
           allowBroken = true;
