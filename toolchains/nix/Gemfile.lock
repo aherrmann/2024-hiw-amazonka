@@ -1,0 +1,140 @@
+GIT
+  remote: https://github.com/matthewbauer/rails.git
+  revision: e91d51a6b4ae17b77e9b783bab9f91b96335f30a
+  branch: fix-backtracking-regex-pr45012-6_1_6
+  glob: activerecord/*.gemspec
+  specs:
+    activerecord (6.1.6)
+      activemodel (= 6.1.6)
+      activesupport (= 6.1.6)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    actionpack (6.1.6)
+      actionview (= 6.1.6)
+      activesupport (= 6.1.6)
+      rack (~> 2.0, >= 2.0.9)
+      rack-test (>= 0.6.3)
+      rails-dom-testing (~> 2.0)
+      rails-html-sanitizer (~> 1.0, >= 1.2.0)
+    actionview (6.1.6)
+      activesupport (= 6.1.6)
+      builder (~> 3.1)
+      erubi (~> 1.4)
+      rails-dom-testing (~> 2.0)
+      rails-html-sanitizer (~> 1.1, >= 1.2.0)
+    activemodel (6.1.6)
+      activesupport (= 6.1.6)
+    activesupport (6.1.6)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 1.6, < 2)
+      minitest (>= 5.1)
+      tzinfo (~> 2.0)
+      zeitwerk (~> 2.3)
+    addressable (2.8.6)
+      public_suffix (>= 2.0.2, < 6.0)
+    backports (3.24.1)
+    builder (3.2.4)
+    coderay (1.1.3)
+    concurrent-ruby (1.2.2)
+    connection_pool (2.4.1)
+    crass (1.0.6)
+    erubi (1.12.0)
+    ethon (0.16.0)
+      ffi (>= 1.15.0)
+    faraday (0.17.6)
+      multipart-post (>= 1.2, < 3)
+    faraday_middleware (0.14.0)
+      faraday (>= 0.7.4, < 1.0)
+    ffi (1.16.3)
+    gh (0.14.0)
+      addressable
+      backports
+      faraday (~> 0.8)
+      multi_json (~> 1.0)
+      net-http-persistent (>= 2.7)
+      net-http-pipeline
+    highline (1.7.10)
+    i18n (1.14.1)
+      concurrent-ruby (~> 1.0)
+    json (2.7.1)
+    launchy (2.5.2)
+      addressable (~> 2.8)
+    loofah (2.22.0)
+      crass (~> 1.0.2)
+      nokogiri (>= 1.12.0)
+    method_source (1.0.0)
+    mini_portile2 (2.8.5)
+    minitest (5.20.0)
+    multi_json (1.15.0)
+    multipart-post (2.3.0)
+    net-http-persistent (4.0.2)
+      connection_pool (~> 2.2)
+    net-http-pipeline (1.0.1)
+    nokogiri (1.15.5)
+      mini_portile2 (~> 2.8.2)
+      racc (~> 1.4)
+    pg (1.5.4)
+    pry (0.14.2)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+    public_suffix (5.0.4)
+    pusher-client (0.6.2)
+      json
+      websocket (~> 1.0)
+    racc (1.7.3)
+    rack (2.2.8)
+    rack-test (2.1.0)
+      rack (>= 1.3)
+    rails-dom-testing (2.2.0)
+      activesupport (>= 5.0.0)
+      minitest
+      nokogiri (>= 1.6)
+    rails-html-sanitizer (1.6.0)
+      loofah (~> 2.21)
+      nokogiri (~> 1.14)
+    railties (6.1.6)
+      actionpack (= 6.1.6)
+      activesupport (= 6.1.6)
+      method_source
+      rake (>= 12.2)
+      thor (~> 1.0)
+    rake (13.1.0)
+    standalone_migrations (7.1.3)
+      activerecord (>= 6.0.0, < 7.2)
+      nokogiri (~> 1.14)
+      railties (>= 6.0.0, < 7.2)
+      rake (>= 10.0)
+    thor (1.3.0)
+    travis (1.8.13)
+      backports
+      faraday (~> 0.9)
+      faraday_middleware (~> 0.9, >= 0.9.1)
+      gh (~> 0.13)
+      highline (~> 1.6)
+      launchy (~> 2.1)
+      pusher-client (~> 0.4)
+      typhoeus (~> 0.6, >= 0.6.8)
+    typhoeus (0.8.0)
+      ethon (>= 0.8.0)
+    tzinfo (2.0.6)
+      concurrent-ruby (~> 1.0)
+    websocket (1.2.10)
+    zeitwerk (2.6.12)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activerecord!
+  pg
+  pry
+  standalone_migrations
+  travis
+
+RUBY VERSION
+   ruby 3.0.6p216
+
+BUNDLED WITH
+   2.4.10

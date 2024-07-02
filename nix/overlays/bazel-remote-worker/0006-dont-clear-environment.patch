@@ -1,0 +1,11 @@
+--- a/src/main/java/com/google/devtools/build/lib/shell/JavaSubprocessFactory.java
++++ b/src/main/java/com/google/devtools/build/lib/shell/JavaSubprocessFactory.java
+@@ -152,7 +152,7 @@ public class JavaSubprocessFactory implements SubprocessFactory {
+     ProcessBuilder builder = new ProcessBuilder();
+     builder.command(params.getArgv());
+     if (params.getEnv() != null) {
+-      builder.environment().clear();
++      //builder.environment().clear();
+       builder.environment().putAll(params.getEnv());
+     }
+ 

@@ -1,0 +1,80 @@
+From 559a900b3b3b3ad219886c36741dee868545f1c5 Mon Sep 17 00:00:00 2001
+From: Andreas Herrmann <andreas.herrmann@tweag.io>
+Date: Thu, 12 Oct 2023 20:39:35 +0200
+Subject: [PATCH 2/2] Implement BatchReadBlobsRequest handler for remote worker
+
+---
+ .../build/remote/worker/CasServer.java        | 43 ++++++++++++++-----
+ 1 file changed, 33 insertions(+), 10 deletions(-)
+
+diff --git a/src/tools/remote/src/main/java/com/google/devtools/build/remote/worker/CasServer.java b/src/tools/remote/src/main/java/com/google/devtools/build/remote/worker/CasServer.java
+index 1fdf95de57..9abdc06a5e 100644
+--- a/src/tools/remote/src/main/java/com/google/devtools/build/remote/worker/CasServer.java
++++ b/src/tools/remote/src/main/java/com/google/devtools/build/remote/worker/CasServer.java
+@@ -16,23 +16,16 @@ package com.google.devtools.build.remote.worker;
+ 
+ import static com.google.devtools.build.lib.remote.util.Utils.getFromFuture;
+ 
+-import build.bazel.remote.execution.v2.BatchUpdateBlobsRequest;
+-import build.bazel.remote.execution.v2.BatchUpdateBlobsResponse;
++import build.bazel.remote.execution.v2.*;
+ import build.bazel.remote.execution.v2.ContentAddressableStorageGrpc.ContentAddressableStorageImplBase;
+-import build.bazel.remote.execution.v2.Digest;
+-import build.bazel.remote.execution.v2.Directory;
+-import build.bazel.remote.execution.v2.DirectoryNode;
+-import build.bazel.remote.execution.v2.FindMissingBlobsRequest;
+-import build.bazel.remote.execution.v2.FindMissingBlobsResponse;
+-import build.bazel.remote.execution.v2.GetTreeRequest;
+-import build.bazel.remote.execution.v2.GetTreeResponse;
+-import build.bazel.remote.execution.v2.RequestMetadata;
+ import com.google.common.flogger.GoogleLogger;
+ import com.google.devtools.build.lib.remote.common.CacheNotFoundException;
+ import com.google.devtools.build.lib.remote.common.RemoteActionExecutionContext;
+ import com.google.devtools.build.lib.remote.util.TracingMetadataUtils;
++import com.google.protobuf.ByteString;
+ import com.google.protobuf.InvalidProtocolBufferException;
+ import com.google.rpc.Code;
++import com.google.rpc.Status;
+ import io.grpc.stub.StreamObserver;
+ import java.io.IOException;
+ import java.util.ArrayDeque;
+@@ -99,6 +92,36 @@ final class CasServer extends ContentAddressableStorageImplBase {
+     responseObserver.onCompleted();
+   }
+ 
++  @Override
++  public void batchReadBlobs(BatchReadBlobsRequest request, StreamObserver<BatchReadBlobsResponse> responseObserver) {
++    RequestMetadata meta = TracingMetadataUtils.fromCurrentContext();
++    RemoteActionExecutionContext context = RemoteActionExecutionContext.create(meta);
++
++    BatchReadBlobsResponse.Builder batchResponse = BatchReadBlobsResponse.newBuilder();
++
++    for (Digest digest : request.getDigestsList()) {
++      BatchReadBlobsResponse.Response.Builder digestResponse = batchResponse.addResponsesBuilder();
++      digestResponse.setDigest(digest);
++      try {
++        digestResponse.setData(ByteString.copyFrom(getFromFuture(cache.downloadBlob(context, digest))));
++      } catch (CacheNotFoundException e) {
++        digestResponse.setStatus(StatusUtils.notFoundStatus(digest));
++        continue;
++      } catch (InterruptedException e) {
++        responseObserver.onError(StatusUtils.interruptedError(digest));
++        return;
++      } catch (Exception e) {
++        logger.atWarning().withCause(e).log("Read request failed");
++        responseObserver.onError(StatusUtils.internalError(e));
++        return;
++      }
++      digestResponse.getStatusBuilder().setCode(Code.OK.getNumber());
++    }
++
++    responseObserver.onNext(batchResponse.build());
++    responseObserver.onCompleted();
++  }
++
+   @Override
+   public void getTree(GetTreeRequest request, StreamObserver<GetTreeResponse> responseObserver) {
+     RequestMetadata meta = TracingMetadataUtils.fromCurrentContext();
+-- 
+2.34.1
+

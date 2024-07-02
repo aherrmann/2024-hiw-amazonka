@@ -1,0 +1,19 @@
+source 'https://rubygems.org'
+#ruby '3.0.6'
+
+git_source(:github) do |repo_name|
+  repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
+  "https://github.com/#{repo_name}.git"
+end
+
+# needed to fix https://github.com/rails/rails/issues/45011
+# can be removed once we update to rails 7
+gem "activerecord", :git => "https://github.com/matthewbauer/rails.git", :branch => 'fix-backtracking-regex-pr45012-6_1_6', :glob => 'activerecord/*.gemspec'
+gem 'pg'
+gem 'standalone_migrations'
+gem 'pry' # Useful for debugging standalone_migrations if necessary.
+gem 'travis' # Travis CI CLI
+
+# libxml2
+gem 'nokogiri', '1.16.2'
+
