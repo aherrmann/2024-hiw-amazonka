@@ -25,11 +25,6 @@
           allowBroken = true;
         };
       };
-      rubyEnv = pkgs.bundlerEnv {
-        name = "gems";
-        ruby = pkgs.ruby_3_0;
-        gemdir = ./.;
-      };
 
       toolchains = import toolchains/nix { inherit system; };
 
@@ -42,11 +37,7 @@
         pkgs.gnused
         pkgs.git
         pkgs.nix
-        pkgs.nodejs
         pkgs.openssh
-        pkgs.yarn
-        rubyEnv
-        rubyEnv.wrappedRuby
       ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
         pkgs.stdenv.cc.bintools
         pkgs.darwin.cctools
@@ -68,64 +59,9 @@
             exec "$BASH" nix/overlays/buck2/update.sh
           '';
         };
-        bazel-remote-worker = pkgs.writeShellScriptBin "start-worker" (
-          let
-            path = pkgs.lib.makeSearchPath "bin" buck2BuildInputs;
-            sandboxFlags =
-              pkgs.lib.optionals pkgs.stdenv.isLinux [
-                "--sandboxing"
-                "--sandboxing_writable_path=/dev/shm"
-                "--sandboxing_tmpfs_dir=/tmp"
-                "--sandboxing_block_network"
-              ];
-          in
-          ''
-            set -euo pipefail
-
-            mkdir -p "$PWD/tmp/work" "$PWD/tmp/cas"
-
-            exec ${pkgs.coreutils}/bin/env -i \
-              PATH="${path}" \
-              ${pkgs.bazel-remote-worker}/bin/bazel-remote-worker "$@" \
-                --listen_port=7070 \
-                --work_path="$PWD/tmp/work" \
-                --cas_path="$PWD/tmp/cas" \
-                --remote_cache=grpcs://remote.buildbuddy.io \
-                --remote_timeout=3600 \
-                ''${BUILDBUDDY_API_KEY:+"--remote_header=x-buildbuddy-api-key=$BUILDBUDDY_API_KEY"} \
-                ${pkgs.lib.strings.concatStringsSep " " sandboxFlags}
-
-          ''
-        );
       };
 
       devShells = rec {
-        default = bazel;
-        bazel = pkgs.mkShellNoCC {
-          name = "bazel-test-shell";
-          packages = with pkgs;
-            [
-              bazel_6
-              bazel-buildtools
-              cacert
-              nix
-              git
-              openssh
-              rubyEnv
-              rubyEnv.wrappedRuby
-            ]
-            ++ lib.optional stdenv.isDarwin macOS-security;
-          shellHook = ''
-            # node and openssl problem
-            export NODE_OPTIONS=--openssl-legacy-provider
-	    # for now. frontend REACT configuration here.
-            export REACT_APP_BACKEND_SOURCE=localhost
-            export REACT_APP_NGROK_SUBDOMAIN=abcd1234
-            export REACT_APP_DOMAIN_NAME=mercury.place
-	    #
-            export PS1="\n[bazel-test-shell:\w]$ \0"
-          '';
-        };
         buck2 = pkgs.mkShellNoCC {
           name = "buck2-test-shell";
           packages = buck2BuildInputs ++ [

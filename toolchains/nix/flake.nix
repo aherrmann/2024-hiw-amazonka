@@ -21,11 +21,6 @@
         lib = pkgs.lib;
         compilerName = import ./compiler.nix;
         hsPkgs = pkgs.haskell.packages.${compilerName};
-        rubyEnv = pkgs.bundlerEnv {
-          name = "gems";
-          ruby = pkgs.ruby_3_0;
-          gemdir = ./.;
-        };
         buck2BuildInputs = [
           pkgs.bash
           pkgs.coreutils
@@ -33,10 +28,6 @@
           pkgs.gnused
           pkgs.git
           pkgs.nix
-          pkgs.nodejs
-          pkgs.yarn
-          rubyEnv
-          rubyEnv.wrappedRuby
         ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
           pkgs.stdenv.cc.bintools
           pkgs.darwin.cctools
