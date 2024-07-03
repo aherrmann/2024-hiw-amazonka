@@ -27,75 +27,17 @@ let
   # Add a `package-name = "A.B.X.Y";` line in this record to select a Hackage
   # version of the package to depend on. Please try to keep the list sorted.
   overlay-packageSourceOverrides = packageSourceOverrides {
-    aeson-typescript = "0.6.3.0";
-    alex = "3.4.0.1";
-    autoexporter = "2.0.0.9";
-    base-prelude = "1.6.1.1";
     bifunctors = "5.6.2";
-    bytebuild = "0.3.16.2";
-    bytehash = "0.1.1.2";
-    contiguous = "0.6.4.0";
-    country = "0.2.4.1";
-    deferred-folds = "0.9.18.6";
     doctest = "0.22.2";
-    doctest-parallel = "0.3.0.1";
-    double-conversion = "2.0.5.0";
-    enummapset = "0.7.2.0";
-    esqueleto = "3.5.11.2";
-    focus = "1.0.3.2";
-    fourmolu = "0.12.0.0";
-    genvalidity-hspec = "1.0.0.3";
-    ghc-lib-parser = "9.6.4.20240109";
-    ghc-lib-parser-ex = "9.6.0.2";
-    haskell-src-meta = "0.8.13";
-    hedgehog = "1.4";
-    hie-bios = "0.13.1";
-    hiedb = "0.5.0.1";
-    hlint = "3.5";
-    hpack = "0.36.0";
     hspec = "2.11.7";
-    hspec-api = "2.11.7";
     hspec-core = "2.11.7";
     hspec-discover = "2.11.7";
     hspec-expectations = "0.8.4";
-    http-client = "0.7.15";
-    http-client-tls = "0.3.6.3";
-    http-conduit = "2.3.8.3";
-    hw-hspec-hedgehog = "0.1.1.1";
-    hw-prim = "0.6.3.2";
-    implicit-hie = "0.1.4.0";
-    implicit-hie-cradle = "0.5.0.1";
-    list-t = "1.0.5.7";
-    lsp = "2.3.0.0";
-    lsp-test = "0.16.0.1";
-    lsp-types = "2.1.1.0";
-    lucid = "2.11.20230408";
-    monoid-subclasses = "1.2.4.1";
-    persistent = "2.14.6.1";
-    postgresql-libpq = "0.9.5.0";
     primitive = "0.9.0.0";
-    primitive-extras = "0.10.1.10";
-    primitive-unlifted = "2.1.0.0";
-    psqueues = "0.2.8.0";
-    rebase = "1.20.2";
-    rerebase = "1.20.2";
-    run-st = "0.1.3.2";
     semigroupoids = "6.0.0.1";
-    servant = "0.19.1";
-    servant-client = "0.19";
-    servant-client-core = "0.19";
-    servant-openapi3 = "2.0.1.6";
-    servant-server = "0.19.2";
-    stm-containers = "1.2.0.3";
-    stm-hamt = "1.2.0.14";
-    tasty-hedgehog = "1.4.0.2";
-    tasty-hspec = "1.2.0.4";
     th-abstraction = "0.6.0.0";
     uuid-types = "1.0.5.1";
     tagged = "0.8.8";
-    tls = "1.9.0";
-    tree-diff = "0.3.0.1";
-    wuss = "2.0.1.5";
   };
 
   # IMPORTANT
@@ -125,308 +67,21 @@ let
           })
           (hself.callPackage src args);
 
-      ### Hackage Dependencies ###
-      #
-      # These dependencies are pulled from Hackage and are newer than what is
-      # pinned in nixpkgs. When updating nixpkgs, we should check these and ensure
-      # that we're not getting a newer variant from nix.
-
-      text-icu =
-        if (self.stdenv.hostPlatform.isDarwin)
-        then
-          overrideCabal
-            (old: {
-              # prevent adding /usr/local/opt/icu4c/ and /opt/homebrew/opt/icu4c/ to include / lib dirs
-              # flag was only introduced in version 0.8.0.5
-              # see https://github.com/haskell/text-icu/pull/99
-              patches = (old.patches or [ ])
-                ++ [
-                ./ghc/text-icu-homebrew.patch
-              ];
-            })
-            (disableCabalFlag "homebrew" hsuper.text-icu)
-        else hsuper.text-icu;
-
-      hlint = doJailbreak (hsuper.hlint.overrideAttrs (old: {
-        src = self.fetchFromGitHub {
-          owner = "ndmitchell";
-          repo = "hlint";
-          rev = "a37e918f17ed90d236e6066fcd2dc7b1e9d5b2d1";
-          hash = "sha256-qJfIy7b2acZAGovJ0P15nQuo/0bDgPLgz4YibJrbZFY=";
-        };
-
-        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.makeWrapper ];
-
-        postInstall =
-          (old.postInstall or "")
-          + ''
-            wrapProgram "$out/bin/hlint" \
-              --add-flags '-j="$(nproc)"' \
-              --prefix PATH : ${self.coreutils}/bin
-          '';
-
-        patches =
-          (old.patches or [ ])
-          ++ [
-            (self.fetchpatch {
-              url = "https://github.com/ndmitchell/hlint/pull/1435.diff";
-              hash = "sha256-UvmGXAfV6TCbkR5RFFHmR+NZzArhGkmN42WgfRpURjA=";
-            })
-            (self.fetchpatch {
-              url = "https://github.com/ndmitchell/hlint/pull/1473.diff";
-              hash = "sha256-OIFNim35AZMP3WCMsfDJ+zUTmjOhkDyttDxl8SV3MNg=";
-              excludes = [ "hints.md" ];
-            })
-          ];
-      }));
-
-      # transformers >= 0.6
-      hoauth2 = doJailbreak hsuper.hoauth2;
-
-      # transformers >= 0.6
-      stm-lifted = doJailbreak hsuper.stm-lifted;
-
-      # test failed
-      yesod-persistent = dontCheck hsuper.yesod-persistent;
-      persistent-qq = dontCheck hsuper.persistent-qq;
-
-      ### Git Dependencies ###
-      #
-      # These are dependencies that we've forked. We should try to ensure that
-      # we're making PRs to upstream these changes as much as possible.
-
-      # FIXME(jadel): the new version with ghc 9.2 compat is not yet on hackage (sorry)
-      slack-web = doJailbreak (hself.callPackage ../deps/slack-web.nix { });
-
-      # Mercury permanent fork
-      hailgun = doJailbreak (hself.callPackage ../deps/hailgun.nix { });
-
-      # Curriculum api
-      Curriculum = hself.callPackage ../deps/Curriculum.nix {
-        fetchgit = args: self.fetchGit (args // {
-          branchName = "main";
-        });
-      };
-
-      # adjusted for GHC 9.6
-      refinery = hself.callPackage ../deps/refinery.nix { };
-
-      # FIXME test fails
-      lsp-test = dontCheck hsuper.lsp-test;
-      # FIXME its test suite defines Arbitrary J.Value which is now defined in
-      # aeson. Easy patch
-      lsp = dontCheck hsuper.lsp;
-
-      # Needed for ghcide version, and also aeson 2 bound.
-      # Got a permission denied error when opening a file which caused the tests
-      # to fail... disabled for now but FIXME
-      # Also needed for halfsp; so we can't just rely on the HLS overlay to pick
-      # it.
-      hie-bios = doJailbreak (dontCheck hsuper.hie-bios);
-
-
-      # utf8-light is a dependency of the test suite, but it doesn't build on GHC 9
-      # and the repository in its cabal file is 404 on github.
-      language-javascript = dontCheck hsuper.language-javascript;
-
-      # Dependency cycle between bin and out outputs on aarch64-darwin.
-      # Nixpkgs patches this but only on the default compiler for some
-      # reason.
-      ghcid =
-        if (self.stdenv.hostPlatform.isDarwin && self.stdenv.hostPlatform.isAarch64)
-        then overrideCabal hsuper.ghcid (drv: { enableSeparateBinOutput = false; })
-        else hsuper.ghcid;
-
-      # new changes
       system-cxx-std-lib = null;
-      HTTP = doJailbreak hsuper.HTTP;
-      RSA = doJailbreak hsuper.RSA;
-      aeson-iproute =
-        appendPatch (self.fetchpatch {
-          url = "https://github.com/greydot/aeson-iproute/pull/7.diff";
-          hash = "sha256-005kwGVMaG72XpfjLQqKRg9PZHblwkznQdopHQsGM08=";
-        })
-        hsuper.aeson-iproute;
-      aeson-pretty = hself.callCabal2nix "aeson-pretty" (
-        self.applyPatches {
-          src = self.fetchFromGitHub {
-            owner = "informatikr";
-            repo = "aeson-pretty";
-            rev = "4678b295a04422533e22344be427e8f721ee390a";
-            hash = "sha256-6oxDkDLDtnGZdRe+9HHL/EUkbbWU4YlcFWhroDsOpRg=";
-          };
-          patches = [
-            (self.fetchpatch {
-	      url = "https://github.com/informatikr/aeson-pretty/pull/43.diff";
-              hash = "sha256-Fs3mqfOS9mm2mOr8EoKgb8jnw2OerOJguVNxabkEkt8=";
-            })
-	  ];
-        }
-      ) {};
-      aeson-typescript = dontCheck hsuper.aeson-typescript;
-      algebraic-graphs = doJailbreak hsuper.algebraic-graphs;
       async = doJailbreak hsuper.async;
-      attoparsec = doJailbreak hsuper.attoparsec;
-      base64 = doJailbreak hsuper.base64;
       bifunctors = doJailbreak hsuper.bifunctors;
-      bitvec = doJailbreak hsuper.bitvec;
-      boring = doJailbreak hsuper.boring;
-      bsb-http-chunked = doJailbreak (dontCheck hsuper.bsb-http-chunked);
-      bugsnag-haskell = appendPatch ../patches/bugsnag-haskell-aeson-2.2.patch hsuper.bugsnag-haskell;
-      byte-order = doJailbreak hsuper.byte-order;
-      bytebuild = doJailbreak hsuper.bytebuild;
-      bytehash = doJailbreak hsuper.bytehash;
-      byteslice = doJailbreak hsuper.byteslice;
-      co-log-core = doJailbreak hsuper.co-log-core;
-      commutative-semigroups = doJailbreak hsuper.commutative-semigroups;
-      concurrent-output = doJailbreak hsuper.concurrent-output;
-      constraints-extras = doJailbreak hsuper.constraints-extras;
-      country = doJailbreak hsuper.country;
-      dec = doJailbreak hsuper.dec;
-      doctest-parallel = doJailbreak hsuper.doctest-parallel;
-      double-conversion = disableCabalFlag "embedded_double_conversion" (
-        addBuildDepends [self.double-conversion] hsuper.double-conversion
-      );
-      errors = doJailbreak hsuper.errors;
-      esqueleto = dontCheck hsuper.esqueleto;
-      fast-logger = dontCheck hsuper.fast-logger;
-      focus = doJailbreak hsuper.focus;
-      foldl = doJailbreak hsuper.foldl;
-      fourmolu = overrideCabal (old: {
-        # `bytestring`, `deepseq`, `ghc-lib-parser` upper bound
-        jailbreak = true;
-        libraryHaskellDepends =
-          (old.libraryHaskellDepends or [])
-          ++ [
-            hself.file-embed
-          ];
-        # Some of the tests need the `fourmolu` executable. Cabal writes it to
-        # `dist/build/fourmolu/fourmolu`.
-        preCheck =
-          (old.preCheck or "")
-          + ''
-            export PATH="$PATH:$(pwd)/dist/build/fourmolu"
-          '';
-      }) (disableCabalFlag "fixity-th" hsuper.fourmolu);
-      free = doJailbreak hsuper.free;
-      generic-lens = doJailbreak (dontCheck hsuper.generic-lens);
-      generic-lens-core = doJailbreak hsuper.generic-lens-core;
-      ghc-lib-parser = doJailbreak hsuper.ghc-lib-parser;
-      ghc-trace-events = doJailbreak hsuper.ghc-trace-events;
-      hiedb =
-        overrideCabal (drv: {
-          src = self.fetchFromGitHub {
-            owner = "wz1000";
-            repo = "hiedb";
-            rev = "404b4fa5d597f9901afcaae0231519b1b5d04617";
-            hash = "sha256-KmR4DbySSMPOxYgDS/588nTPZL4f0RXIJUMciztxW1w=";
-          };
-        })
-        (dontCheck hsuper.hiedb);
-      hourglass = dontCheck hsuper.hourglass;
       hspec-core = dontCheck hsuper.hspec-core;
       hspec-discover = dontCheck hsuper.hspec-discover;
       hspec = dontCheck hsuper.hspec;
-      http-api-data = doJailbreak hsuper.http-api-data;
-      hw-fingertree = doJailbreak hsuper.hw-fingertree;
-      hw-prim = doJailbreak hsuper.hw-prim;
-      implicit-hie-cradle =
-        overrideCabal (drv: {
-          src = self.fetchFromGitHub {
-            owner = "MercuryTechnologies";
-            repo = "implicit-hie-cradle";
-            # wavewave/ghc982
-            rev = "8994c6fb3a4ffda71801c401cd8acc3ddd454075";
-            hash = "sha256-aIVp9MFBN3J9yabhs+KltmIY/SYgzWBLvJqx2l+82Ks=";
-          };
-        })
-        (dontUpdateCabalFile (doJailbreak hsuper.implicit-hie-cradle));
       indexed-traversable = doJailbreak hsuper.indexed-traversable;
       integer-conversion = doJailbreak hsuper.integer-conversion;
-      lifted-async = doJailbreak hsuper.lifted-async;
-      lifted-base =
-        appendPatch (self.fetchpatch {
-          url = "https://github.com/basvandijk/lifted-base/pull/35.patch";
-          hash = "sha256-b29AVDiEMcShceRJyKEauK/411UkOh3ME9AnKEYvcEs=";
-        })
-        hsuper.lifted-base;
-      megaparsec = doJailbreak hsuper.megaparsec;
-      modern-uri = doJailbreak hsuper.modern-uri;
-      multiset = doJailbreak hsuper.multiset;
       network-uri = doJailbreak hsuper.network-uri;
-      newtype-generics = doJailbreak hsuper.newtype-generics;
-      optparse-generic = doJailbreak hsuper.optparse-generic;
-      pcre-heavy = dontCheck hsuper.pcre-heavy;
-      postgresql-libpq =
-        overrideCabal (drv: {
-          editedCabalFile = "sha256-ZoCsPJR7+Pvh0YHQzhq7m9BpExb6Hi39VHtjGypL5gk=";
-          revision = "1";
-          jailbreak = true;
-        })
-        hsuper.postgresql-libpq;
-      # Various version bounds including aeson 2.
-      postgresql-simple = doJailbreak (
-        appendPatches [
-          (self.fetchpatch {
-            url = "https://github.com/MercuryTechnologies/postgresql-simple/pull/1.diff";
-            hash = "sha256-2BBxS8nuyH7Z5V5OZfh9HtYNNLGSBkDi6b/CWy8JomI=";
-          })
-        ]
-        hsuper.postgresql-simple
-      );
       primitive = dontCheck hsuper.primitive;
-      primitive-addr = doJailbreak hsuper.primitive-addr;
-      primitive-unaligned = doJailbreak hsuper.primitive-unaligned;
-      primitive-unlifted = dontCheck hsuper.primitive-unlifted;
-      quickcheck-classes = doJailbreak hsuper.quickcheck-classes;
       quickcheck-instances = doJailbreak hsuper.quickcheck-instances;
-      rebase = doJailbreak hsuper.rebase;
-      # Needs a patch to bump aeson bounds.
-      refined =
-        overrideCabal (old: {
-          src = self.fetchFromGitHub {
-            owner = "nikita-volkov";
-            repo = "refined";
-            rev = "11296288b5e2f2b391ee721b50af3cfe7beaa790";
-            hash = "sha256-jqtxCPbOdgtn+KYxSMGAqT4lgwn6mocdKBLQJbzXhfY=";
-          };
-          jailbreak = true;
-        })
-        (dontUpdateCabalFile hsuper.refined);
-      retry = dontCheck hsuper.retry;
-      safe-exceptions = doJailbreak hsuper.safe-exceptions;
       scientific = doJailbreak hsuper.scientific;
-      servant = dontCheck hsuper.servant;
-      servant-client-core = dontCheck hsuper.servant-client-core;
-      servant-client = dontCheck hsuper.servant-client;
-      servant-openapi3 = doJailbreak (dontCheck (unmarkBroken hsuper.servant-openapi3));
-      servant-server = dontCheck hsuper.servant-server;
-      singleton-bool = doJailbreak hsuper.singleton-bool;
-      some = doJailbreak hsuper.some;
-      sop-core = doJailbreak hsuper.sop-core;
       splitmix = doJailbreak hsuper.splitmix;
-      stm-hamt = doJailbreak hsuper.stm-hamt;
-      streaming-commons = doJailbreak hsuper.streaming-commons;
-      string-interpolate = doJailbreak hsuper.string-interpolate;
-      system-filepath = doJailbreak hsuper.system-filepath;
-      tasty-discover = dontCheck hsuper.tasty-discover;
-      tasty-hedgehog = doJailbreak hsuper.tasty-hedgehog;
-      tasty-hspec = doJailbreak hsuper.tasty-hspec;
-      tasty-rerun = doJailbreak hsuper.tasty-rerun;
-      text-metrics = doJailbreak hsuper.text-metrics;
-      these-skinny = doJailbreak hsuper.these-skinny;
-      tree-diff = doJailbreak hsuper.tree-diff;
-      tuples = doJailbreak hsuper.tuples;
-      type-equality = doJailbreak hsuper.type-equality;
       unliftio-core = doJailbreak hsuper.unliftio-core;
       unordered-containers = doJailbreak hsuper.unordered-containers;
-      vault = doJailbreak hsuper.vault;
-      vector-algorithms = doJailbreak hsuper.vector-algorithms;
-      websockets = doJailbreak hsuper.websockets;
-      wide-word = doJailbreak hsuper.wide-word;
-      wl-pprint-annotated = doJailbreak hsuper.wl-pprint-annotated;
-      wuss = doJailbreak hsuper.wuss;
-      xss-sanitize = doJailbreak hsuper.xss-sanitize;
     }
     // (
       let
@@ -444,171 +99,10 @@ let
             else "--subpath ${name}"
           ) {});
       in {
-        deriving-aeson = doJailbreak hsuper.deriving-aeson;
         aeson = doJailbreak (overrideAeson "aeson");
-        # `primitive` upper bound
-        attoparsec-aeson = doJailbreak (dontUpdateCabalFile (overrideAeson "attoparsec-aeson"));
-        # `text` upper bound
-        attoparsec-iso8601 = overrideAeson "attoparsec-iso8601";
         text-iso8601 = overrideAeson "text-iso8601";
       }
-    )
-    // (
-      let
-        # Replace this once a new version after 0.19.x comes out.
-        src = self.applyPatches {
-          src = self.fetchFromGitHub {
-            owner = "haskell-servant";
-            repo = "servant";
-            # Branch: `master`
-            # https://github.com/haskell-servant/servant/commit/e9d283a03f1098576d914fb046a058925b3d03ca
-            rev = "e9d283a03f1098576d914fb046a058925b3d03ca";
-            hash = "sha256-84aKnXaiYN2RbrTQD0IDpGZnICSfQvHV7O8rhAwMS04=";
-          };
-          patches = [
-            (self.fetchpatch {
-              url = "https://github.com/haskell-servant/servant/pull/1687.diff";
-              hash = "sha256-928Y/FjtTo1DbWGmCOhxV2ho2f1EC/SS+Oij3VaEMCo=";
-            })
-          ];
-        };
-        overrideServant = drv:
-          doJailbreak (
-            hself.callCabal2nixWithOptions drv.pname src "--subpath ${drv.pname}" {}
-          );
-      in {
-        servant = overrideServant hsuper.servant;
-        servant-client = overrideServant hsuper.servant-client;
-        servant-client-core = overrideServant hsuper.servant-client-core;
-        servant-http-streams = overrideServant hsuper.servant-http-streams;
-        servant-server = overrideServant hsuper.servant-server;
-      }
     );
-
-  # Creates a haskell-language-server overlay for a given source tree. This is
-  # its own thing because HLS bundles a few dozen packages in its source tree,
-  # so we need to update all the packages at once.
-  overlay-haskell-language-server-with-source = src: hself: hsuper:
-    let
-      # The test suite for the HLS plugins fail weirdly in Nix.
-      # Reported upstream here: https://github.com/haskell/haskell-language-server/issues/2312
-      # There seem to be two classes of errors.
-      # One is caused by attempting to write to `$HOME`, which is
-      # set to the nonexistent path `/homeless-shelter` (ugh) in
-      # Nix builds:
-      #     Error while initializing: ResponseError
-      #       { _code = InternalError
-      #       , _message = "Error on initialize: /homeless-shelter: createDirectory: permission denied (Read-only file system)"
-      #       , _xdata = Nothing}
-      # The other class of error is from... something getting messed up:
-      #     IO exception:
-      #     <file descriptor: 116>: hPutBuf: resource vanished (Broken pipe)
-      #     arose while trying to send message:
-      #     {
-      #         "id": 0,
-      #         "jsonrpc": "2.0",
-      #         "method": "shutdown",
-      #         "params": null
-      #     }
-      hlsPlugin = name: dontCheck (hself.callCabal2nixWithOptions name src "--subpath plugins/${name}" { });
-
-      hlsPackage = name: hself.callCabal2nixWithOptions name src "--subpath ${name}" { };
-    in
-    {
-      # These are all the HLS plugins except for non-Fourmolu formatters:
-      hls-refactor-plugin = hlsPlugin "hls-refactor-plugin";
-      hls-splice-plugin = hlsPlugin "hls-splice-plugin";
-      hls-hlint-plugin = hlsPlugin "hls-hlint-plugin";
-      hls-class-plugin = hlsPlugin "hls-class-plugin";
-      hls-explicit-fixity-plugin = hlsPlugin "hls-explicit-fixity-plugin";
-      hls-alternate-number-format-plugin = hlsPlugin "hls-alternate-number-format-plugin";
-      hls-explicit-record-fields-plugin = hlsPlugin "hls-explicit-record-fields-plugin";
-      hls-call-hierarchy-plugin = hlsPlugin "hls-call-hierarchy-plugin";
-      hls-haddock-comments-plugin = hlsPlugin "hls-haddock-comments-plugin";
-      hls-eval-plugin = hlsPlugin "hls-eval-plugin";
-      hls-explicit-imports-plugin = hlsPlugin "hls-explicit-imports-plugin";
-      hls-refine-imports-plugin = hlsPlugin "hls-refine-imports-plugin";
-      hls-rename-plugin = hlsPlugin "hls-rename-plugin";
-      hls-retrie-plugin = hlsPlugin "hls-retrie-plugin";
-      hls-tactics-plugin = hlsPlugin "hls-tactics-plugin";
-      hls-stan-plugin = hlsPlugin "hls-stan-plugin";
-      hls-module-name-plugin = hlsPlugin "hls-module-name-plugin";
-      hls-qualify-imported-names-plugin = hlsPlugin "hls-qualify-imported-names-plugin";
-      hls-code-range-plugin = hlsPlugin "hls-code-range-plugin";
-      hls-change-type-signature-plugin = hlsPlugin "hls-change-type-signature-plugin";
-      hls-gadt-plugin = hlsPlugin "hls-gadt-plugin";
-      hls-cabal-plugin = hlsPlugin "hls-cabal-plugin";
-      hls-cabal-fmt-plugin = hlsPlugin "hls-cabal-fmt-plugin";
-      hls-fourmolu-plugin = hlsPlugin "hls-fourmolu-plugin";
-      hls-pragmas-plugin = hlsPlugin "hls-pragmas-plugin";
-      hls-overloaded-record-dot-plugin = hlsPlugin "hls-overloaded-record-dot-plugin";
-      hls-semantic-tokens-plugin = hlsPlugin "hls-semantic-tokens-plugin";
-
-      hls-plugin-api = hlsPackage "hls-plugin-api";
-      hls-graph = hlsPackage "hls-graph";
-      hls-test-utils = hlsPackage "hls-test-utils";
-
-      hie-compat = hlsPackage "hie-compat";
-
-      # Test failures which can be ignored + hie-bios upper bound.
-      ghcide = doJailbreak (dontCheck (hlsPackage "ghcide"));
-
-      haskell-language-server =
-        overrideCabal
-          (old: {
-            buildDepends = [ self.makeWrapper ];
-            allowInconsistentDependencies = true;
-            # disable a few plugins
-            configureFlags = (old.configureFlags or []) ++ ["-f-stan" "-f-stylishHaskell" "-f-ormolu" "-f-floskell"];
-            postInstall =
-              (old.postInstall or "")
-              + ''
-                for EXECUTABLE in "$out/bin/"*; do
-                    wrapProgram "$EXECUTABLE" --set XDG_CACHE_HOME dist-newstyle/cache
-                done
-              '';
-          })
-          # The test suite expects to find Stack and GHC 8.10 and other
-          # silly tools, so we disable it.
-          (dontCheck
-            ((hself.callCabal2nix "haskell-language-server" src { }).override {
-              # The reason we do this is to guarantee that
-              # `haskell-language-server` supports at least the following
-              # plugins when we upgrade GHC, even if Nixpkgs tries to
-              # disable those plugins, such as here:
-              #
-              # https://github.com/NixOS/nixpkgs/blob/a1826e78afb277ba1c5fbb54e796371eb664091e/pkgs/development/haskell-modules/configuration-ghc-9.4.x.nix#L209-L226
-              #
-              # Note that this doesn't account for `buildable: False`
-              # being set in the cabal files of any of the plugins, or
-              # plugins only being included in an `impl(ghc)` block in
-              # HLS's cabal file.
-              inherit
-                (hself)
-                hls-call-hierarchy-plugin
-                hls-code-range-plugin
-                hls-explicit-imports-plugin
-                hls-fourmolu-plugin
-                hls-pragmas-plugin
-                hls-overloaded-record-dot-plugin
-                hls-semantic-tokens-plugin
-                ;
-              hls-stan-plugin = null;
-              hls-ormolu-plugin = null;
-            }));
-    };
-
-  overlay-haskell-language-server = overlay-haskell-language-server-with-source (
-    self.applyPatches {
-      src = self.fetchFromGitHub {
-        owner = "MercuryTechnologies";
-        repo = "haskell-language-server";
-        # Branch: `wavewave/ghc982-culture`
-        rev = "f11642afabd0f2477548fc4e4e8e5e457989a081";
-        hash = "sha256-U0jkOthyuBMlG6buPv8ajhSAUKd/RnPFUqdeIZiwVDk=";
-      };
-    }
-  );
 
 in
 
@@ -625,19 +119,8 @@ in
             self.lib.fold
               self.lib.composeExtensions
               (prev.overrides or (_: _: { }))
-              [ overlay-packageSourceOverrides overlay-haskell-language-server (haskell-overlay self super) ];
+              [ overlay-packageSourceOverrides (haskell-overlay self super) ];
         });
     };
-  };
-
-  haskell-language-server = super.haskell-language-server.override {
-    haskellPackages = self.haskell.packages.${compilerName};
-
-    supportedGhcVersions =
-      let
-        number =
-          builtins.replaceStrings [ "ghc" ] [ "" ] compilerName;
-      in
-      [ number ];
   };
 }

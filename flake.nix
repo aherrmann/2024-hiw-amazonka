@@ -66,7 +66,6 @@
           name = "buck2-test-shell";
           packages = buck2BuildInputs ++ [
             pkgs.buck2-source
-            pkgs.haskell-language-server
             pkgs.nix
           ];
 
