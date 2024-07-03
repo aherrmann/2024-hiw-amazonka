@@ -6,6 +6,7 @@ haskell_library(
     compiler_flags = default_ghc_flags,
     visibility = ["//myproject/..."],
     deps = [
+        "//haskell:aeson",
         "//haskell:base",
         "//myproject:pkg-a",
     ],
