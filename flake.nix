@@ -97,6 +97,7 @@
           '';
         };
         amazonka-ghc98 = with amazonka.legacyPackages."${system}"; mkDevShell ghc98;
+        amazonka-ghcNix = amazonka.legacyPackages."${system}".mkDevShell toolchains.packages."${system}".hsPkgs;
       };
     });
 

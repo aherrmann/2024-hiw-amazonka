@@ -73,7 +73,7 @@
               tag = "latest";
             };
 
-          inherit ghcWithPackages haddock haskellPackages;
+          inherit ghcWithPackages haddock haskellPackages hsPkgs;
           inherit (hsPkgs) ghc;
 
           bash = pkgs.writeShellScriptBin "bash" ''
