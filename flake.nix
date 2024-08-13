@@ -8,6 +8,7 @@
       flake = false;
     };
     rust-overlay.url = "github:oxalica/rust-overlay";
+    toolchains-nix.url = "path:toolchains/nix";
     amazonka.url = "git+file:./amazonka";
   };
   outputs =
