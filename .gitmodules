@@ -1,3 +1,6 @@
 [submodule "prelude"]
 	path = prelude
 	url = git@github.com:MercuryTechnologies/buck2-prelude.git
+[submodule "amazonka"]
+	path = amazonka
+	url = git@github.com:brendanhay/amazonka.git
