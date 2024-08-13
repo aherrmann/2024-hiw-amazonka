@@ -8,15 +8,18 @@
       flake = false;
     };
     rust-overlay.url = "github:oxalica/rust-overlay";
+    amazonka.url = "git+file:./amazonka";
   };
-  outputs = inputs @ {
-    self,
-    nixpkgs,
-    flake-utils,
-    rust-overlay,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
+  outputs =
+    inputs @ { self
+    , nixpkgs
+    , flake-utils
+    , rust-overlay
+    , amazonka
+    , ...
+    }:
+    flake-utils.lib.eachDefaultSystem (system:
+    let
       pkgs = import nixpkgs {
         inherit system;
         overlays = [ rust-overlay.overlays.default ] ++ import ./toolchains/nix/overlays;
@@ -93,7 +96,7 @@
             export PS1="\n[buck2-ghcHEAD:\w]$ \0"
           '';
         };
-
+        amazonka-ghc98 = with amazonka.legacyPackages."${system}"; mkDevShell ghc98;
       };
     });
 
