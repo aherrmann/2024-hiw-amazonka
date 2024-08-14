@@ -33,6 +33,7 @@ let
     hspec-core = "2.11.7";
     hspec-discover = "2.11.7";
     hspec-expectations = "0.8.4";
+    http-conduit = "2.3.8.3";
     primitive = "0.9.0.0";
     semigroupoids = "6.0.0.1";
     th-abstraction = "0.6.0.0";
@@ -69,19 +70,30 @@ let
 
       system-cxx-std-lib = null;
       async = doJailbreak hsuper.async;
+      attoparsec = doJailbreak hsuper.attoparsec;
       bifunctors = doJailbreak hsuper.bifunctors;
+      bitvec = doJailbreak hsuper.bitvec;
+      foldl = doJailbreak hsuper.foldl;
+      free = doJailbreak hsuper.free;
+      hourglass = dontCheck hsuper.hourglass;
       hspec-core = dontCheck hsuper.hspec-core;
       hspec-discover = dontCheck hsuper.hspec-discover;
       hspec = dontCheck hsuper.hspec;
+      http-client = doJailbreak hsuper.http-client;
       indexed-traversable = doJailbreak hsuper.indexed-traversable;
       integer-conversion = doJailbreak hsuper.integer-conversion;
       network-uri = doJailbreak hsuper.network-uri;
       primitive = dontCheck hsuper.primitive;
+      primitive-addr = doJailbreak hsuper.primitive-addr;
+      quickcheck-classes = doJailbreak hsuper.quickcheck-classes;
       quickcheck-instances = doJailbreak hsuper.quickcheck-instances;
+      safe-exceptions = doJailbreak hsuper.safe-exceptions;
       scientific = doJailbreak hsuper.scientific;
       splitmix = doJailbreak hsuper.splitmix;
+      streaming-commons = doJailbreak hsuper.streaming-commons;
       unliftio-core = doJailbreak hsuper.unliftio-core;
       unordered-containers = doJailbreak hsuper.unordered-containers;
+      vector-algorithms = doJailbreak hsuper.vector-algorithms;
     }
     // (
       let
@@ -93,13 +105,17 @@ let
           hash = "sha256-Wv0XODMZ9R68+PkTxyhC/+kiNWmpedXGpRKi4ge8CxM=";
         };
         overrideAeson = name: (hself.callCabal2nixWithOptions name
-          src (
+          src
+          (
             if name == "aeson"
             then ""
             else "--subpath ${name}"
-          ) {});
-      in {
+          )
+          { });
+      in
+      {
         aeson = doJailbreak (overrideAeson "aeson");
+        attoparsec-aeson = doJailbreak (dontUpdateCabalFile (overrideAeson "attoparsec-aeson"));
         text-iso8601 = overrideAeson "text-iso8601";
       }
     );
