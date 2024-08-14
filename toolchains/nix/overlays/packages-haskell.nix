@@ -29,6 +29,7 @@ let
   overlay-packageSourceOverrides = packageSourceOverrides {
     bifunctors = "5.6.2";
     doctest = "0.22.2";
+    hedgehog = "1.4";
     hspec = "2.11.7";
     hspec-core = "2.11.7";
     hspec-discover = "2.11.7";
@@ -36,6 +37,7 @@ let
     http-conduit = "2.3.8.3";
     primitive = "0.9.0.0";
     semigroupoids = "6.0.0.1";
+    tasty-hedgehog = "1.4.0.2";
     th-abstraction = "0.6.0.0";
     uuid-types = "1.0.5.1";
     tagged = "0.8.8";
@@ -73,6 +75,7 @@ let
       attoparsec = doJailbreak hsuper.attoparsec;
       bifunctors = doJailbreak hsuper.bifunctors;
       bitvec = doJailbreak hsuper.bitvec;
+      concurrent-output = doJailbreak hsuper.concurrent-output;
       foldl = doJailbreak hsuper.foldl;
       free = doJailbreak hsuper.free;
       hourglass = dontCheck hsuper.hourglass;
@@ -82,6 +85,14 @@ let
       http-client = doJailbreak hsuper.http-client;
       indexed-traversable = doJailbreak hsuper.indexed-traversable;
       integer-conversion = doJailbreak hsuper.integer-conversion;
+      lifted-async = doJailbreak hsuper.lifted-async;
+      lifted-base =
+        appendPatch
+          (self.fetchpatch {
+            url = "https://github.com/basvandijk/lifted-base/pull/35.patch";
+            hash = "sha256-b29AVDiEMcShceRJyKEauK/411UkOh3ME9AnKEYvcEs=";
+          })
+          hsuper.lifted-base;
       network-uri = doJailbreak hsuper.network-uri;
       primitive = dontCheck hsuper.primitive;
       primitive-addr = doJailbreak hsuper.primitive-addr;
@@ -91,9 +102,11 @@ let
       scientific = doJailbreak hsuper.scientific;
       splitmix = doJailbreak hsuper.splitmix;
       streaming-commons = doJailbreak hsuper.streaming-commons;
+      type-equality = doJailbreak hsuper.type-equality;
       unliftio-core = doJailbreak hsuper.unliftio-core;
       unordered-containers = doJailbreak hsuper.unordered-containers;
       vector-algorithms = doJailbreak hsuper.vector-algorithms;
+      wl-pprint-annotated = doJailbreak hsuper.wl-pprint-annotated;
     }
     // (
       let
