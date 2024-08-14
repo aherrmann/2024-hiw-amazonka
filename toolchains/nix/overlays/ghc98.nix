@@ -1,70 +1,69 @@
-self: super: let
+self: super:
+let
   # For GHC to generate a core dump file when crashing with a segmentation fault,
   # the GHC binary should be code-signed with the get-task-allow entitlement on macos.
   # As code-signing is carried out by a setup hook for GHC on nixpkgs, we customize the
   # hook with custom entitlements.
   # ref. https://nasa.github.io/trick/howto_guides/How-to-dump-core-file-on-MacOS.html
   signingUtilsWithGetTaskAllow =
-    self.callPackage ./ghc/signing-utils-with-get-task-allow/default.nix {inherit (self.darwin) cctools sigtool;};
+    self.callPackage ./ghc/signing-utils-with-get-task-allow/default.nix { inherit (self.darwin) cctools sigtool; };
 
   autoSignDarwinBinariesWithGetTaskAllowHook = self.darwin.autoSignDarwinBinariesHook.overrideAttrs (_: {
-    propagatedBuildInputs = [signingUtilsWithGetTaskAllow];
+    propagatedBuildInputs = [ signingUtilsWithGetTaskAllow ];
   });
 
-  mkGhc = {
-    version,
-    compiler,
-    src,
-    patches,
-  }:
+  mkGhc =
+    { version
+    , compiler
+    , src
+    , patches
+    ,
+    }:
     ((compiler.overrideAttrs {
-        ghcVersion = version;
-        version = version;
-      })
-      .override {
-        # The GHC builder in nixpkgs first builds hadrian with the
-        # source tree provided here and then uses the built hadrian to
-        # build the rest of GHC. We need to make sure our patches get
-        # included in this `src`, then, rather than modifying the tree in
-        # the `patchPhase` or `postPatch` of the outer builder.
-        ghcSrc =
-          (self.applyPatches {
-            inherit src patches;
-          })
-          .overrideAttrs (drv: {
-            # After patching the GHC, we need to regenerate compiler/GHC/Cmm/Parser.hs
-            # for which a pre-generated version was included in the GHC source
-            # distribution. So here the generated file is deleted and the original
-            # source is restored for a patch to be applied.
-            prePatch = ''
-              echo "Recreating GHC.Cmm.Parser.y"
-              mv compiler/GHC/Cmm/Parser.y.source compiler/GHC/Cmm/Parser.y
-              rm compiler/GHC/Cmm/Parser.hs
-            '';
-            postPatch = ''
-              ed -s compiler/GHC/Driver/MakeFile/JSON.hs <<EOF
-              0 i
-              {-# LANGUAGE DeriveGeneric #-}
-              {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-              {-# LANGUAGE ImportQualifiedPost #-}
-              {-# LANGUAGE NamedFieldPuns #-}
-              .
-              w
-              EOF
-              ed -s compiler/GHC/Driver/MakeFile.hs <<EOF
-              0 i
-              {-# LANGUAGE NamedFieldPuns #-}
-              .
-              w
-              EOF
-            '';
-            nativeBuildInputs = [self.ed] ++ drv.nativeBuildInputs or [];
-          });
-        # Add the `get-task-allow` entitlement on macOS to generate core dumps on
-        # segfault.
-        autoSignDarwinBinariesHook = autoSignDarwinBinariesWithGetTaskAllowHook;
-      })
-    .overrideAttrs (drv: {
+      ghcVersion = version;
+      version = version;
+    }).override {
+      # The GHC builder in nixpkgs first builds hadrian with the
+      # source tree provided here and then uses the built hadrian to
+      # build the rest of GHC. We need to make sure our patches get
+      # included in this `src`, then, rather than modifying the tree in
+      # the `patchPhase` or `postPatch` of the outer builder.
+      ghcSrc =
+        (self.applyPatches {
+          inherit src patches;
+        }).overrideAttrs (drv: {
+          # After patching the GHC, we need to regenerate compiler/GHC/Cmm/Parser.hs
+          # for which a pre-generated version was included in the GHC source
+          # distribution. So here the generated file is deleted and the original
+          # source is restored for a patch to be applied.
+          prePatch = ''
+            echo "Recreating GHC.Cmm.Parser.y"
+            mv compiler/GHC/Cmm/Parser.y.source compiler/GHC/Cmm/Parser.y
+            rm compiler/GHC/Cmm/Parser.hs
+          '';
+          postPatch = ''
+            ed -s compiler/GHC/Driver/MakeFile/JSON.hs <<EOF
+            0 i
+            {-# LANGUAGE DeriveGeneric #-}
+            {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+            {-# LANGUAGE ImportQualifiedPost #-}
+            {-# LANGUAGE NamedFieldPuns #-}
+            .
+            w
+            EOF
+            ed -s compiler/GHC/Driver/MakeFile.hs <<EOF
+            0 i
+            {-# LANGUAGE NamedFieldPuns #-}
+            .
+            w
+            EOF
+          '';
+          nativeBuildInputs = [ self.ed ] ++ drv.nativeBuildInputs or [ ];
+        });
+      # Add the `get-task-allow` entitlement on macOS to generate core dumps on
+      # segfault.
+      autoSignDarwinBinariesHook = autoSignDarwinBinariesWithGetTaskAllowHook;
+    }).overrideAttrs (drv: {
       # Regenerate `configure` from `configure.ac`.
       postPatch = ''
         ${self.autoconf}/bin/autoreconf --force --install --include=m4
@@ -77,9 +76,10 @@ self: super: let
         };
     });
 
-  ghc982Src = let
-    version = "9.8.2";
-  in
+  ghc982Src =
+    let
+      version = "9.8.2";
+    in
     self.fetchurl {
       url = "https://downloads.haskell.org/ghc/${version}/ghc-${version}-src.tar.xz";
       hash = "sha256-4vt6fddGEjfSLoNlqD7dnhp30uFdBF85RTloRah3gck=";
@@ -176,8 +176,20 @@ self: super: let
       url = "https://gitlab.haskell.org/ghc/ghc/-/commit/6f82305420f4e64b3c365997447e86b8d1765977.diff";
       hash = "sha256-rBcko7Pakay/OfKwR89un7joT5dOUlnFyuJt1G+bZkI=";
     })
+
+    # bytecode linking
+    (self.fetchpatch {
+      url = "https://gitlab.haskell.org/torsten.schmits/ghc/-/commit/aa266140f35cb1d138824c78e048ad3fc814c15a.diff";
+      hash = "sha256-iIyUJH1rlztScxWoX4bPt4guxmsnug7r7yvR/DlgXZ4=";
+    })
+
+    (self.fetchpatch {
+      url = "https://gitlab.haskell.org/torsten.schmits/ghc/-/commit/09e307a7784fac0109747bb5922cc0c64edaffd1.diff";
+      hash = "sha256-QQvY9n0q+JkOv40MHj3BxNz6vvjxTnKaKGPwBA0HYZo=";
+    })
   ];
-in {
+in
+{
   haskell =
     super.haskell
     // {
