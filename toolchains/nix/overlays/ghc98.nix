@@ -176,6 +176,14 @@ let
       url = "https://gitlab.haskell.org/ghc/ghc/-/commit/6f82305420f4e64b3c365997447e86b8d1765977.diff";
       hash = "sha256-rBcko7Pakay/OfKwR89un7joT5dOUlnFyuJt1G+bZkI=";
     })
+    (self.fetchpatch {
+      url = "https://gitlab.haskell.org/ghc/ghc/-/commit/3676db0fef433d1ca02ca8417bf87f8fb61ebe0b.diff";
+      hash = "sha256-nNkOD2qz3RIZ770exq3qGtOQjv8Qyc14kMfJptdC5kY=";
+    })
+    (self.fetchpatch {
+      url = "https://gitlab.haskell.org/ghc/ghc/-/commit/ecf726ab5a75fdc0a92c0849cce82ed227240360.diff";
+      hash = "sha256-BCUqW+3Muhr/9NjIp4AH0K6v0yOQmOIwM42cnL3caNg=";
+    })
 
     # refactor quadratic search in warnMissingHomeModules
     # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/12607
