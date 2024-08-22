@@ -1,1 +1,4 @@
+.buckconfig.local
+.envrc.private
 buck-out
+result
