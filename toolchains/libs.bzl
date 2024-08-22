@@ -32,6 +32,7 @@ toolchain_libraries = [
     "transformers",
     "unordered-containers",
     "uuid",
+    "vector",
     "xml-conduit",
     "xml-types",
 ]
