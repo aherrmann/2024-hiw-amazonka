@@ -22,6 +22,7 @@
   "ini"
   "lens"
   "memory"
+  "mtl"
   "regex-posix"
   "resourcet"
   "retry"
