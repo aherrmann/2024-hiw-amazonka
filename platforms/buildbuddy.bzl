@@ -1,4 +1,4 @@
-image = "docker://ghcr.io/aherrmann/amazonka-buck2@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+image = "docker://ghcr.io/aherrmann/amazonka-buck2@sha256:fb1e07b33a66310fb8d1fbbfff733875e9152723213d0cf0b0a0a4585a0b2480"
 
 def _platforms(ctx):
     constraints = dict()
