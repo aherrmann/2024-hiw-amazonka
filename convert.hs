@@ -89,6 +89,14 @@ genTarget name desc pkgMap =
     ++ "    compiler_flags = ghc_flags,\n"
     ++ "    visibility = [\"//amazonka/...\"],\n"
     ++ "    deps = [\n"
+    ++ concat
+      [ "        \""
+          ++ case Map.lookup dep pkgMap of
+            Just depPkg -> "//" ++ depPkg.directory ++ ":" ++ dep
+            Nothing -> "//haskell:" ++ dep
+          ++ "\",\n"
+        | dep <- desc.dependencies
+      ]
     ++ "    ],\n"
     ++ ")\n"
 
