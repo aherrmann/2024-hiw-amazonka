@@ -103,9 +103,5 @@ genTarget name desc pkgMap =
 main :: IO ()
 main = do
   pkgMap <- collectCabals "amazonka/lib"
-  -- pPrint pkgMap
   forM_ (Map.toList pkgMap) $ \(name, pkg) -> do
-    putStrLn name
-    pPrint pkg
-    putStrLn $ genTarget name pkg pkgMap
-    putStrLn "=================================================="
+    writeFile (pkg.directory </> "BUCK") (genTarget name pkg pkgMap)
