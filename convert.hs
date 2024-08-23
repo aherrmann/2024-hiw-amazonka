@@ -9,6 +9,7 @@
 
 import Cabal.Package (readPackage)
 import Data.Foldable
+import Data.List (intercalate)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import System.Directory.PathWalk
@@ -65,19 +66,38 @@ collectCabals = flip pathWalkAccumulate $ \dir _ files ->
   where
     isCabal filepath = takeExtension filepath == ".cabal"
 
+genTarget :: String -> Buck2PackageDesc -> Map String Buck2PackageDesc -> String
+genTarget name desc pkgMap =
+  "extensions = [\n"
+    ++ concat ["    \"" ++ ext ++ "\",\n" | ext <- desc.extensions]
+    ++ "]\n\n"
+    ++ "ghc_flags = [\"-X\" + ext for ext in extensions] + [\n"
+    ++ concat ["    \"" ++ flag ++ "\",\n" | flag <- desc.options]
+    ++ "]\n\n"
+    ++ "haskell_library(\n"
+    ++ "    name = \""
+    ++ name
+    ++ "\",\n"
+    ++ "    srcs = glob(["
+    ++ intercalate
+      ", "
+      [ "\"" ++ src ++ "/**/*" ++ ext ++ "\""
+        | src <- desc.sources,
+          ext <- [".hs", ".hs-boot"]
+      ]
+    ++ "]),\n"
+    ++ "    compiler_flags = ghc_flags,\n"
+    ++ "    visibility = [\"//amazonka/...\"],\n"
+    ++ "    deps = [\n"
+    ++ "    ],\n"
+    ++ ")\n"
+
 main :: IO ()
 main = do
-  pPrint =<< parseCabal "amazonka/lib/amazonka/amazonka.cabal"
-  pPrint =<< collectCabals "amazonka/lib"
-  genPkgDesc <- readPackage "amazonka/lib/amazonka/amazonka.cabal"
-  putStrLn $ "name: " ++ unPackageName genPkgDesc.packageDescription.package.pkgName
-  flip foldMap (genPkgDesc.condLibrary) $ \case
-    CondNode {condTreeData = library@Library {libName = LMainLibName}} -> do
-      pPrint $ map prettyShow library.libBuildInfo.defaultExtensions
-      pPrint $ fold library.libBuildInfo.options
-      pPrint $ map (unPackageName . depPkgName) library.libBuildInfo.targetBuildDepends
-      pPrint $ library
-    _ -> pure ()
-  -- putStrLn $ "name: " ++ genPkgDesc.packageDescription.package.pkgName
-  putStrLn "============================================================"
-  pPrint genPkgDesc
+  pkgMap <- collectCabals "amazonka/lib"
+  -- pPrint pkgMap
+  forM_ (Map.toList pkgMap) $ \(name, pkg) -> do
+    putStrLn name
+    pPrint pkg
+    putStrLn $ genTarget name pkg pkgMap
+    putStrLn "=================================================="
