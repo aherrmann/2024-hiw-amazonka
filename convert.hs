@@ -27,7 +27,8 @@ import "Cabal-syntax" Distribution.Types.PackageId
 import "Cabal-syntax" Distribution.Types.PackageName
 
 data Buck2PackageDesc = Buck2PackageDesc
-  { package :: String,
+  { directory :: String,
+    sources :: [String],
     extensions :: [String],
     options :: [String],
     dependencies :: [String]
@@ -38,10 +39,10 @@ parseCabal :: FilePath -> IO (Map String Buck2PackageDesc)
 parseCabal filepath = do
   genPkgDesc <- readPackage filepath
   let name = unPackageName genPkgDesc.packageDescription.package.pkgName
-  let package = "//" ++ takeDirectory filepath
-  let (extensions, options, dependencies) = flip foldMap (genPkgDesc.condLibrary) $ \case
+  let (srcs, extensions, options, dependencies) = flip foldMap (genPkgDesc.condLibrary) $ \case
         CondNode {condTreeData = library@Library {libName = LMainLibName}} ->
-          ( map prettyShow library.libBuildInfo.defaultExtensions,
+          ( map prettyShow library.libBuildInfo.hsSourceDirs,
+            map prettyShow library.libBuildInfo.defaultExtensions,
             fold library.libBuildInfo.options,
             map (unPackageName . depPkgName) library.libBuildInfo.targetBuildDepends
           )
@@ -49,7 +50,8 @@ parseCabal filepath = do
   pure $
     Map.singleton name $
       Buck2PackageDesc
-        { package = package,
+        { directory = takeDirectory filepath,
+          sources = srcs,
           extensions = extensions,
           options = options,
           dependencies = dependencies
