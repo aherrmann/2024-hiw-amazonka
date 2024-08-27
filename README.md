@@ -1,8 +1,9 @@
 # Building Haskell with Buck2
 
-Presentation at the [Haskell Implementors Workshop (Haskell Symposium) at ICFP 2024][hiw-2024].
+Presentation at the [Haskell Implementors Workshop (Haskell Symposium) at ICFP 2024][hiw-2024], ([slides]).
 
 [hiw-2024]: https://icfp24.sigplan.org/details/haskellsymp-2024-papers/12/-HIW-Building-Haskell-with-Buck2
+[slides]: https://aherrmann.github.io/2024-hiw-amazonka/
 
 ## Buck2 build of Amazonka
 
