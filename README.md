@@ -63,6 +63,12 @@ Only build and import the Haskell dependencies from Nix:
 $ buck2 build //haskell/...
 ```
 
+Update the Haskell library imports after you made a change:
+
+```shell
+$ buck2 bxl haskell/toolchain.bxl:libs
+```
+
 Clean previous build outputs and start over:
 ```shell
 $ buck2 clean
