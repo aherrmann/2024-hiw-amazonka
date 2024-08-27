@@ -1,6 +1,77 @@
+# Building Haskell with Buck2
+
+Presentation at the [Haskell Implementors Workshop (Haskell Symposium) at ICFP 2024][hiw-2024].
+
+[hiw-2024]: https://icfp24.sigplan.org/details/haskellsymp-2024-papers/12/-HIW-Building-Haskell-with-Buck2
+
+## Buck2 build of Amazonka
+
+Uses [Amazonka] as an example project to illustrate [Buck2] for [Haskell].
+
+[Amazonka]: https://github.com/brendanhay/amazonka
+[Buck2]: https://buck2.build/
+[Haskell]: https://www.haskell.org/
+
+Uses an extension [funded by Mercury][mercury-prelude] of the upstream [Buck2 prelude by Meta][meta-prelude].
+
+[mercury-prelude]: https://github.com/MercuryTechnologies/buck2-prelude/
+[meta-prelude]: https://github.com/facebook/buck2-prelude
+
+## Setup
+
+Make sure to have [Nix] installed.
+
+[Nix]: https://nixos.org/
+
+Enter the Nix shell with the following command or using [direnv].
+
+```shell
+$ nix develop .#buck2
+```
+
+[direnv]: https://direnv.net/
+
+## Usage
+
+Build select Amazonka components:
+
+```shell
+$ buck2 build //amazonka/lib/amazonka //amazonka/lib/services/amazonka-s3
+```
+
+Query for all available Amazonka components:
+
+```shell
+$ buck2 uquery //amazonka/...
+```
+
+Build all of Amazonka at once (this will take a while):
+
+```shell
+$ buck2 build //amazonka/...
+```
+
+Only build and import the Haskell dependencies from Nix:
+
+```shell
+$ buck2 build //haskell/...
+```
+
+Clean previous build outputs and start over:
+```shell
+$ buck2 clean
+```
+
+Generate a Chrome trace of the latest build, you can view it with [Perfetto UI]:
+```shell
+$ buck2 debug chrome-trace --trace-path=trace.json
+```
+
+[Perfetto UI]: https://ui.perfetto.dev/
+
 # buck2-ghcHEAD
 
-Buck2 project template supporting both nix-based GHC env and custom.
+This setup is based on a Buck2 project template supporting both nix-based GHC env and custom.
 
 ## Getting started
 
