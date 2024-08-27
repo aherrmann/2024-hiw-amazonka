@@ -19,6 +19,12 @@ Uses an extension [funded by Mercury][mercury-prelude] of the upstream [Buck2 pr
 
 ## Setup
 
+Make sure to checkout all git submodules.
+
+```shell
+$ git submodule update --init --recursive
+```
+
 Make sure to have [Nix] installed.
 
 [Nix]: https://nixos.org/
