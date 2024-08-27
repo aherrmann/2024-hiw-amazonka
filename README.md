@@ -69,6 +69,12 @@ Update the Haskell library imports after you made a change:
 $ buck2 bxl haskell/toolchain.bxl:libs
 ```
 
+Re-generate the Buck2 targets after you changed the Cabal files:
+
+```shell
+$ ./convert.hs
+```
+
 Clean previous build outputs and start over:
 ```shell
 $ buck2 clean
