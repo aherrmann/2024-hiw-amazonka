@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>reveal-md</title>
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="stylesheet" href="./dist/reset.css" />
+    <link rel="stylesheet" href="./dist/reveal.css" />
+    <link rel="stylesheet" href="./dist/theme/black.css" id="theme" />
+    <link rel="stylesheet" href="./css/highlight/base16/zenburn.css" />
+
+    <link rel="stylesheet" href="./_assets/assets/fontawesome.min.css" />
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section data-markdown data-separator="\r?\n---\r?\n" data-separator-vertical="\r?\n----\r?\n">
+          <textarea data-template>
+            
+
+<!-- .slide: data-background-image="assets/tweag_logo_white.svg" data-background-size="20%" data-background-position="top 1em right 1em" -->
+
+# Building Haskell with Buck2
+
+by Andreas Herrmann
+
+<small>Haskell Implementors Workshop (Haskell Symposium) ICFP – 7th September 2024</small>
+
+Note:
+- introduction (SBG lead, Tweag - OSPO Modus Create)
+- focus: scalable, polyglot build systems - Bazel / Buck2
+- topic: Buck2 for Haskell
+- collaboration
+  - Mercury (Ian-Woo Kim)
+  - Tweag SBG (Claudio Bley, myself)
+  - Tweag GHC (Torsten Schmits, Cheng Shao, Sjoerd Visscher)
+  - Well Typed (Matthew Pickering, Zubin Duggal)
+- ---
+- ! indicates next fragment (slide animation)
+
+---
+
+## Motivation
+
+<div>
+<img src="assets/buck2_logo.svg" width="12%" style="margin-right: 2em;">
+<img src="assets/bazel_logo.svg" width="12%">
+</div>
+
+- fast feedback <!-- .element: class="fragment" -->
+- distributed cache <!-- .element: class="fragment" -->
+- distributed build <!-- .element: class="fragment" -->
+- extensible <!-- .element: class="fragment" -->
+- cross plaform <!-- .element: class="fragment" -->
+
+Note:
+- why scalable build system - Buck2 / Bazel
+- ! fast feedback loop
+- what they offer
+- ! dist cache (branch-switch, do/undo, use CI builds)
+- ! dist build (scale)
+- ! general & extensible (polyglot & code-gen)
+- ! cross platform/compilation
+
+---
+
+## Background
+
+- &zwnj; <!-- .element: class="fragment" --> [tweag/rules_haskell](https://github.com/tweag/rules_haskell) 2017/18
+- &zwnj; <!-- .element: class="fragment" --> [Buck2 contributors](https://www.tweag.io/blog/2023-07-06-buck2/)
+
+Note:
+- relevant background - why us?
+- Haskell Bazel rule authors
+- contributors to Buck2 open sourcing
+
+---
+
+## Codebase
+
+- $1\mathrm{M}$ lines Haskell <!-- .element: class="fragment" -->
+- $9\mathrm{k}$ modules <!-- .element: class="fragment" -->
+  <span>($7.5\mathrm{k}$ single library)</span> <!-- .element: class="fragment" -->
+- TypeScript & code-generation <!-- .element: class="fragment" -->
+
+Note:
+- target project
+- large Haskell code base
+  - ! 1M LoC (approx.)
+  - ! 9k modules  ! 7.5k single library
+- ! complex: polyglot (TS) & code gen
+- ---
+- (Cabal build times 8min)
+  - 20min w/o byte code
+  - on 10 core Mac M1
+
+---
+
+## Demo
+### Amazonka <!-- .element: class="fragment" -->
+
+- GitHub: <!-- .element: class="fragment" --> [aherrmann/2024-hiw-amazonka](https://github.com/aherrmann/2024-hiw-amazonka)
+- $3.8\mathrm{M}$ lines Haskell <!-- .element: class="fragment" -->
+- $35\mathrm{k}$ modules <!-- .element: class="fragment" -->
+
+Note:
+- target proprietary
+- open source demo project
+- ! Amazonka
+- ! example code on GitHub
+- ! even larger !
+- automated migration
+- flatter dependency graph
+
+---
+
+### Amazonka
+
+```mermaid
+graph TD
+  amazonka-sts --> amazonka-core
+  amazonka-sso --> amazonka-core
+  amazonka --> amazonka-core
+  amazonka --> amazonka-sso
+  amazonka --> amazonka-sts
+  amazonka-s3 --> amazonka-core
+  others["..."] ~~~ amazonka-core
+  amazonka-ec2 --> amazonka-core
+
+  style others fill-opacity: 0, stroke-opacity: 0;
+```
+<!-- .element: style="text-align: center" -->
+
+Note:
+- only 1-2 packages deep
+
+---
+
+## Buck2 Overview
+
+<img src="assets/buck2_logo.svg" width="10%" style="float: right">
+
+- Meta (2023) <!-- .element: class="fragment" -->
+- v2 of Buck (2013) <!-- .element: class="fragment" -->
+- inspired by Blaze (Bazel) <!-- .element: class="fragment" -->
+
+Note:
+- What's Buck2
+- ! build system by Meta
+- open source 2023
+- ! v2 of Buck (2x faster)
+- ! inspired by Blaze (Google's internal Bazel)
+
+---
+
+### Targets
+
+<div style="display: flex; align-items: center">
+
+```python
+haskell_library(
+    name = "amazonka-s3",
+    deps = [":amazonka-core"],
+    ...
+)
+
+haskell_library(
+    name = "amazonka-core",
+    ...
+)
+```
+<!-- .element: class="fragment" style="flex: 1" -->
+
+```mermaid
+graph TD
+  amazonka-s3 --> amazonka-core
+```
+<!-- .element: class="fragment" style="flex: 1; text-align: center; vertical-align: middle" -->
+
+</div>
+
+Note:
+- separate target and action graphs
+- ! target: user level
+  - e.g. Haskell library (rule)
+- ! target dependencies &rarr; target graph
+  - deps attribute
+
+---
+
+### Actions
+
+<div style="display: flex; align-items: center">
+
+```python
+haskell_library(
+    name = "amazonka-core",
+    srcs = [
+        "src/Amazonka/Types.hs",
+        "src/Amazonka/Core.hs",
+    ],
+    ...
+)
+```
+<!-- .element: class="fragment" style="flex: 1" -->
+
+```mermaid
+%%{init: { "flowchart": { "nodeSpacing": 5 } } }%%
+graph LR
+  subgraph amazonka-core
+    direction TB;
+    Amazonka.Types(compile Amazonka.Types) --> Amazonka.Core(compile Amazonka.Core)
+    Amazonka.Core & Amazonka.Types --> link_core(link library)
+  end
+```
+<!-- .element: class="fragment" style="flex: 1; text-align: center; vertical-align: middle" -->
+
+</div>
+
+Note:
+- action: build level
+- ! rules issue actions
+  - ! e.g. compile or link action
+
+---
+
+### Buck2 Actions
+
+<div style="display: flex">
+
+<div style="flex: 1">
+
+- explicit inputs <!-- .element: class="fragment" -->
+- explicit outputs <!-- .element: class="fragment" -->
+- action graph <!-- .element: class="fragment" -->
+- remote builds <!-- .element: class="fragment" -->
+- remote cache <!-- .element: class="fragment" -->
+
+</div>
+
+<pre style="flex: 1"><code class="python" data-fragment-index="0" data-line-numbers="|2,5|3,4|"
+>cmd = cmd_args(
+  ghc, "-c", src,
+  "-ohi", iface.as_output(),
+  "-o", obj.as_output(),
+  hidden = dep_ifaces,
+)
+ctx.actions.run(cmd)</code></pre></div>
+
+Note:
+- actions have
+- ! explicit inputs
+- ! explicit outputs
+- ! artifacts &rarr; action graph
+  - scheduling / parallelism
+- ! remote execution
+  - which inputs to send
+  - which outputs to collect
+- ! content addressed cache
+  - what to hash
+  - when to invalidate
+
+---
+
+## Module Order Compilation
+
+```mermaid
+graph RL
+  Core -->|import| Types
+```
+<!-- .element: class="fragment" style="text-align: center" -->
+
+```mermaid
+graph LR
+  Types.hs --> compile_types{compile} --> Types.o & Types.hi
+
+  Types.hi --> compile_core{compile} --> Core.o & Core.hi
+  Core.hs ----> compile_core
+
+  style Types.hi fill: darkslateblue
+```
+<!-- .element: class="fragment" style="text-align: center" -->
+
+Note:
+- topic: Haskell builds
+- compile modules in dependency order
+- ! if `Core` imports `Types`
+- ! compile `Types` before `Core`
+  - interface `Types.hi` needed
+
+---
+
+### Static Target Graph
+
+```python
+haskell_library(
+    name = "amazonka-core",
+    srcs = [
+        "src/Amazonka/Types.hs",
+        "src/Amazonka/Core.hs",
+    ],
+    ...
+)
+```
+<!-- .element: class="fragment" style="width:50%" -->
+
+Note:
+- How to map to Buck2 build actions?
+- ! user only specified the target
+- need explicit action inputs/outputs
+- Bazel & Buck2: static target graph
+- no build time target generation
+- ensure fast query & dependency resolution
+- ---
+- Bazel: need per module targets (Gazelle)
+
+---
+
+### Coarse Grained Actions
+
+```mermaid
+graph LR
+  Types.hs & Core.hs --> compile{ghc --make}
+  subgraph run_all[ctx.actions.run]
+    direction LR
+
+    compile --> Types.o & Types.hi
+    compile ---> Core.o & Core.hi
+  end
+```
+<!-- .element: class="fragment" style="text-align: center" -->
+
+Note:
+- option: coarse grained actions
+- ! i.e. use GHC make mode in single action
+- upside:
+  - `ghc --make` is smart
+- downside:
+  - not incremental (change single module)
+  - remote build & cache
+- ---
+- Buck2 incremental actions
+  - not for remote execution
+  - hermeticity risk
+
+---
+
+### Fine Grained Actions
+
+```mermaid
+graph LR
+  subgraph run_types[ctx.actions.run]
+    direction LR
+    compile_types --> Types.o & Types.hi
+  end
+
+  subgraph run_core[ctx.actions.run]
+    Types.hi --> compile_core --> Core.o & Core.hi
+  end
+
+  Types.hs --> compile_types{ghc -c}
+  Core.hs ----> compile_core{ghc -c}
+```
+<!-- .element: class="fragment" style="text-align: center" -->
+
+Note:
+- want: fine grained actions
+- ! one action per module compilation
+  - ghc one-shot mode
+- incremental builds
+  - change `Core` don't rebuild `Types`.
+- remote build & cache
+- downside: one-shot mode overhead
+- but: how to teach Buck2?
+
+---
+
+### Dynamic Action Graph
+
+```mermaid
+%%{init: { "flowchart": { "nodeSpacing": 20 } } }%%
+graph LR
+  Types.hs & Core.hs --> dynamic_container
+
+  subgraph dynamic_container[dynamic]
+    tbd{&zwnj;<br><br><br><br><br><br><br><br>&zwnj;}
+  end
+
+  dynamic_container --> Types.o & Types.hi & Core.o & Core.hi
+
+  style tbd fill-opacity: 0, stroke-opacity: 0;
+```
+<!-- .element: class="fragment" style="text-align: center" -->
+
+Note:
+- Buck2: dynamic action graph
+  - benefit over Bazel
+  - reason to choose Buck2
+- ! dynamic output action
+- black box action "dynamic"
+  - scoped inputs and outputs
+
+---
+
+### Dynamic Action Graph
+
+```mermaid
+%%{init: { "flowchart": { "nodeSpacing": 20 } } }%%
+graph LR
+  md{ghc -M} --> deps[graph] --> dynamic_container
+  Types.hs & Core.hs --> md
+
+  subgraph dynamic_container[dynamic]
+    tbd{&zwnj;<br><br><br><br><br><br><br><br>&zwnj;}
+  end
+
+  style tbd fill-opacity: 0, stroke-opacity: 0;
+```
+<!-- .element: style="text-align: center" -->
+
+Note:
+- special input: dependency graph (`ghc -M`)
+- parsed at build time
+
+---
+
+### Dynamic Action Graph
+
+```mermaid
+%%{init: { "flowchart": { "nodeSpacing": 10 } } }%%
+graph LR
+  Types.hs --> compile_types{ghc -c} ----> Types.o
+  Types.hi -..-> Types.hi.out[Types.hi]
+  Core.hs ----> compile_core{ghc -c} --> Core.o & Core.hi
+
+  subgraph dynamic_container[dynamic]
+    direction LR
+    compile_types{ghc -c} --> Types.hi --> compile_core{ghc -c}
+  end
+```
+<!-- .element: style="text-align: center" -->
+
+Note:
+- generates new actions at build time
+- scoped: pre-declared inputs & outputs
+
+---
+
+### GHC Metadata Output
+
+[GHC#24384](https://gitlab.haskell.org/ghc/ghc/-/issues/24384)
+```json [1]
+$ ghc -M -dep-json dep.json ...
+{ "Amazonka.Types": {
+    "sources": [".../src/Amazonka/Types.hs"],
+    "modules": ["Amazonka.Prelude", ...],  // imports
+    "packages": [  // package deps
+      { "name": "base",
+        // cross package imports
+        "modules": [ "Control.Concurrent", ... ],
+        ... }, ... ],
+    "options": [],  // ghc options
+    ...  // other properties
+  }
+```
+
+Note:
+- To support that
+- added structured dependency output to GHC
+- See GHC issue 24384
+
+---
+
+## Package Boundaries
+
+```mermaid
+graph RL
+  subgraph amazonka-core
+    direction RL
+    Amazonka.Core & Amazonka.Response
+  end
+  
+  subgraph amazonka-s3
+    direction RL
+    Amazonka.S3.Types -->|import| Amazonka.Core
+  end
+```
+<!-- .element: style="text-align: center" -->
+
+Note:
+- look at packages
+- module imports cross packages
+- `S3` does not depend on `Response`
+- build should neither
+- but dynamic action
+  - scoped to target
+- want
+  - module-granular
+  - incremental builds
+  - across packages
+
+---
+
+### Buck2 Dynamic Values
+
+[facebook/buck2#619](https://github.com/facebook/buck2/pull/619) <!-- .element: class="fragment" -->
+
+Note:
+- want: share data across dynamic actions
+- ! introduced "dynamic values" to Buck2
+  - akin to "future"
+
+---
+
+### Module Granular Build
+
+```shell [1-2|4|6-7]
+$ buck2 build //.../amazonka-s3[...][Amazonka.S3.Types]
+Commands: 195
+
+# edit .../Amazonka/Response.hs
+
+$ buck2 build //.../amazonka-s3[...][Amazonka.S3.Types]
+Commands: 1
+```
+
+Note:
+- benefit: per module build
+- build individual module
+- no linking
+- only compile dependency modules
+  - and `ghc -M` and package-db
+- ! edit non-dependency module
+- ! rerun build
+- no build actions
+  - only `ghc -M` action invalidated
+
+---
+
+### Eliminated Package Boundaries
+
+```mermaid
+%%{init: { "flowchart": { "nodeSpacing": 15, "rankSpacing": 20, "padding": 15 } } }%%
+graph LR
+  link-a --> link-b
+  comp-a1 ----> comp-b3
+  comp-a3 ----> comp-b1
+
+  subgraph pkg-a[ ]
+    direction LR
+    comp-a1 & comp-a2 & comp-a4 --> link-a{ld}
+    comp-a1{ } --> comp-a2{ } & comp-a3{ } --> comp-a4{ }
+    comp-a3 --> link-a
+  end
+
+  subgraph pkg-b[ ]
+    direction LR
+    comp-b1 & comp-b2 & comp-b3 & comp-b4 --> link-b{ld}
+    comp-b4{ } --> comp-b3{ }
+    comp-b1{ } --> comp-b2{ }
+  end
+
+  classDef pkg-b fill: darkslateblue
+  class comp-b1,comp-b2,comp-b3,comp-b4,link-b pkg-b
+```
+<!-- .element: style="text-align: center" -->
+
+Note:
+- and: eliminate package boundaries
+- important for scheduling
+- package boundary bottlenecks
+  - linking/package-db/compile starvation
+
+---
+
+### Eliminated Package Boundaries
+
+```mermaid
+%%{init: { "flowchart": { "nodeSpacing": 15, "rankSpacing": 20, "padding": 15 } } }%%
+graph LR
+  link-a --> link-b
+  comp-a1 & comp-a2 & comp-a4 & comp-a3 --> link-a{ld}
+  comp-b1 & comp-b2 --> link-b{ld}
+  comp-b3 ----> link-b
+  comp-b4 -----> link-b
+
+  comp-a1 & comp-b4{ } --> comp-b3{ }
+  comp-a1{ } --> comp-a2{ } & comp-a3{ } --> comp-a4{ }
+  comp-a3 --> comp-b1
+  comp-b1{ } --> comp-b2{ }
+
+  classDef pkg-b fill: darkslateblue
+  class comp-b1,comp-b2,comp-b3,comp-b4,link-b pkg-b
+```
+<!-- .element: style="text-align: center" -->
+
+Note:
+- compile does not depend on link
+- compile actions "float left"
+- ---
+- package-db: purely metadata
+
+---
+
+## Current Performance
+
+- Cabal: 1h 6min (local, 8 core) <!-- .element: class="fragment" -->
+- Buck2:   15min (remote, 100 core) <!-- .element: class="fragment" -->
+- Buck2: 2h 3min (local, 8 core) <!-- .element: class="fragment" -->
+
+Note:
+- benchmarks
+- warning: preliminary
+- clean build
+- ! local Cabal 1h
+- ! remote Buck2 15min
+- ! local Buck2 2h
+- room for improvement
+- but scaling works
+
+---
+
+### Full Local Build
+
+![](assets/full_clean_local_cabal_load.png) <!-- .element: style="width: 60%" -->
+![](assets/full_clean_local_buck2_load.png) <!-- .element: style="width: 60%" -->
+
+Note:
+- Cores permanently saturated
+- Mostly one-shot/rules mode overhead
+
+---
+
+### Small Local Build
+
+```mermaid
+graph TD
+  amazonka-sts --> amazonka-core
+  amazonka-sso --> amazonka-core
+  amazonka --> amazonka-core
+  amazonka --> amazonka-sso
+  amazonka --> amazonka-sts
+```
+<!-- .element: style="text-align: center" -->
+- Cabal: 34s <!-- .element: class="fragment" -->
+- Buck2: 23s <!-- .element: class="fragment" -->
+
+Note:
+- Build only `amazonka` (& `amazonka-core|sts|sso`)
+- ! Cabal 34s
+- ! Buck2 23s
+- despite one-shot overhead
+- (cherry-picked)
+
+---
+
+### Small Local Build
+
+![](assets/small_clean_local_cabal_load.png) <!-- .element: style="width: 60%" -->
+![](assets/small_clean_local_buck2_load.png) <!-- .element: style="width: 60%" -->
+
+Note:
+- Buck2 has better utilization
+- ---
+- Cabal `-j2 --ghc-options="-j4"`
+- Cabal `-jsem` not available
+
+---
+
+### Incremental Build
+
+```mermaid
+graph TD
+  amazonka-sts --> amazonka-core["amazonka-core<br>(edit Amazonka.Bytes)"]
+  amazonka-sso --> amazonka-core
+  amazonka --> amazonka-core
+  amazonka --> amazonka-sso
+  amazonka --> amazonka-sts
+```
+<!-- .element: style="text-align: center" -->
+- Cabal: 7.7s <!-- .element: class="fragment" -->
+- Buck2: 1.4s <!-- .element: class="fragment" -->
+
+Note:
+- edit `amazonka-core`
+  - non-ABI changing
+- rebuild `amazonka`
+- ! Cabal 7.7s
+- ! Buck2 1.4s
+
+---
+
+## Other Topics
+
+Note:
+- not enough time for details
+
+---
+
+### Template Haskell
+
+- GHC <!-- .element: class="fragment" --> loads `.o` / `.so`
+  - link dependency packages <!-- .element: class="fragment" -->
+- one-shot <!-- .element: class="fragment" --> `-fprefer-byte-code`
+  - only <!-- .element: class="fragment" --> `.hi` needed
+
+[GHC#13042](https://gitlab.haskell.org/ghc/ghc/-/merge_requests/13042) <!-- .element: class="fragment" -->
+
+Note:
+- Template Haskell
+- ! GHC loads objects / libraries
+  - ! compile depends on link
+  - causes package bottleneck
+- ! enable byte-code interpreter in one-shot mode
+  - ! no dependency on link
+- ! GHC MR 13042
+- cross package object loading
+  - catch me in the break
+
+---
+
+### Recompilation Avoidance
+
+- content addressed <!-- .element: class="fragment" -->
+- ABI hash <!-- .element: class="fragment" -->
+-  Recompilation avoidance in rules_haskell <!-- .element: class="fragment" --><br>[tweag.io/blog 3rd November 2022](https://www.tweag.io/blog/2022-11-03-blog_recompilation/)
+- expose build plan <!-- .element: class="fragment" -->
+
+Note:
+- GHC avoids unnecessary recompilation
+- ! Buck2: content hash
+  - any `.hi` change
+- ! ABI hash
+- ! same trick as in Bazel
+  - mark `.hi` as unused input
+  - separate ABI hash input
+- ! future: expose GHC build plan
+  - improved recompilation avoidance
+
+---
+
+### Compilation Server
+
+- one-shot overhead <!-- .element: class="fragment" -->
+  - GHC startup <!-- .element: class="fragment" -->
+  - package-db <!-- .element: class="fragment" -->
+  - linking <!-- .element: class="fragment" -->
+  - interfaces <!-- .element: class="fragment" -->
+- persistent worker <!-- .element: class="fragment" -->
+
+Note:
+- ! one-shot mode overhead
+  - ! GHC startup time
+  - ! package-db loading
+  - ! library linking (esp. MacOS)
+  - ! interface loading
+  - repeated for every module!
+- ! use compilation server
+  - Buck2/Bazel: persistent worker
+  - amortize across modules
+
+---
+
+## Conclusion
+
+<img src="assets/buck2_logo.svg" width="10%" style="float: right">
+
+- module granular <!-- .element: class="fragment" -->
+- avoid package boundaries <!-- .element: class="fragment" -->
+- one-shoto mode overhead <!-- .element: class="fragment" -->
+- incremental <!-- .element: class="fragment" -->
+- parallel <!-- .element: class="fragment" -->
+
+Note:
+- Buck2: extensible & scalable
+- ! module granular build
+- ! avoid package boundaries
+- ! one-shot overhead
+  - need compilation server
+- ! incremental (caching)
+- ! parallel (remote)
+
+---
+
+<!-- .slide: data-background-image="assets/tweag_logo_white.svg" data-background-size="20%" data-background-position="top 1em right 1em" -->
+
+# Thank You
+
+Note:
+- collaboration
+  - Mercury (Ian-Woo Kim)
+  - Tweag SBG (Claudio Bley, myself)
+  - Tweag GHC (Torsten Schmits, Cheng Shao, Sjoerd Visscher)
+  - Well Typed (Matthew Pickering, Zubin Duggal)
+
+          </textarea>
+        </section>
+      </div>
+    </div>
+
+    <script src="./dist/reveal.js"></script>
+
+
+    <script src="./plugin/markdown/markdown.js"></script>
+    <script src="./plugin/highlight/highlight.js"></script>
+    <script src="./plugin/zoom/zoom.js"></script>
+    <script src="./plugin/notes/notes.js"></script>
+    <script src="./plugin/math/math.js"></script>
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        slideNumber: true,
+        highlight: {
+          highlightOnLoad: false
+        },
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealZoom,
+          RevealNotes,
+          RevealMath
+        ]
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"controls":false,"controlsTutorial":false,"navigationMode":"linear","progress":false,"slideNumber":false,"transition":"fade","transitionSpeed":"fast","_":["slides.md"],"static":"_site","static-dirs":"assets,mermaid","staticDirs":"assets,mermaid"}, queryOptions);
+    </script>
+
+    <script src="./_assets/mermaid/dist/mermaid.min.js"></script>
+    <script src="./_assets/mermaid/reveal-mermaid.js"></script>
+
+    <script>
+      Reveal.initialize(options);
+      Reveal.addEventListener('ready', function (event) {
+        const blocks = Reveal.getRevealElement().querySelectorAll('pre code:not(.mermaid)');
+        const hlp = Reveal.getPlugin('highlight');
+        blocks.forEach(hlp.highlightBlock);
+      });
+    </script>
+
+  </body>
+</html>
