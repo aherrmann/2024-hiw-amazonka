@@ -32,13 +32,26 @@ Note:
 - introduction (SBG lead, Tweag - OSPO Modus Create)
 - focus: scalable, polyglot build systems - Bazel / Buck2
 - topic: Buck2 for Haskell
-- collaboration
-  - Mercury (Ian-Woo Kim)
+- ---
+- ! indicates next fragment (slide animation)
+
+---
+
+### Collaboration
+
+- Mercury, I.W. Kim
+- Tweag by Modus Create
+  - T. Schmits, C. Shao, S. Visscher (GHC)
+  - A. Herrmann, C. Bley (build)
+- Well-Typed, M. Pickering, Z. Duggal
+
+Note:
+- part of collaboration
+  - Mercury (Ian-Woo Kim, spoke yesterday)
   - Tweag SBG (Claudio Bley, myself)
   - Tweag GHC (Torsten Schmits, Cheng Shao, Sjoerd Visscher)
   - Well Typed (Matthew Pickering, Zubin Duggal)
-- ---
-- ! indicates next fragment (slide animation)
+- focus on build
 
 ---
 
@@ -80,21 +93,21 @@ Note:
 
 ## Codebase
 
-- $1\mathrm{M}$ lines Haskell <!-- .element: class="fragment" -->
-- $9\mathrm{k}$ modules <!-- .element: class="fragment" -->
-  <span>($7.5\mathrm{k}$ single library)</span> <!-- .element: class="fragment" -->
+- $1.1\mathrm{M}$ lines Haskell <!-- .element: class="fragment" -->
+- $10.2\mathrm{k}$ modules (single package) <!-- .element: class="fragment" -->
 - TypeScript & code-generation <!-- .element: class="fragment" -->
 
 Note:
-- target project
+- target project (as Ian mentioned)
 - large Haskell code base
-  - ! 1M LoC (approx.)
-  - ! 9k modules  ! 7.5k single library
+  - ! 1.1M LoC (approx.)
+  - ! 10.2k modules (single package)
 - ! complex: polyglot (TS) & code gen
 - ---
-- (Cabal build times 8min)
+- (Cabal build times 8min 30s)
   - 20min w/o byte code
   - on 10 core Mac M1
+- future proofing
 
 ---
 
@@ -264,7 +277,14 @@ Note:
 
 ---
 
-## Module Order Compilation
+## Haskell Builds
+
+Note:
+- topic: Haskell builds
+
+---
+
+### Module Order Compilation
 
 ```mermaid
 graph RL
@@ -284,11 +304,12 @@ graph LR
 <!-- .element: class="fragment" style="text-align: center" -->
 
 Note:
-- topic: Haskell builds
+- you all know
 - compile modules in dependency order
 - ! if `Core` imports `Types`
 - ! compile `Types` before `Core`
   - interface `Types.hi` needed
+- how to map to Buck2?
 
 ---
 
@@ -307,12 +328,11 @@ haskell_library(
 <!-- .element: class="fragment" style="width:50%" -->
 
 Note:
-- How to map to Buck2 build actions?
-- ! user only specified the target
-- need explicit action inputs/outputs
 - Bazel & Buck2: static target graph
+- ! user specified target
 - no build time target generation
 - ensure fast query & dependency resolution
+- and, explicit action inputs/outputs
 - ---
 - Bazel: need per module targets (Gazelle)
 
@@ -607,18 +627,18 @@ Note:
 ## Current Performance
 
 - Cabal: 1h 6min (local, 8 core) <!-- .element: class="fragment" -->
-- Buck2:   15min (remote, 100 core) <!-- .element: class="fragment" -->
 - Buck2: 2h 3min (local, 8 core) <!-- .element: class="fragment" -->
+- Buck2:   15min (remote, 100 core) <!-- .element: class="fragment" -->
 
 Note:
 - benchmarks
 - warning: preliminary
 - clean build
 - ! local Cabal 1h
-- ! remote Buck2 15min
 - ! local Buck2 2h
-- room for improvement
-- but scaling works
+  - room for improvement
+- ! remote Buck2 15min
+  - but scaling works
 
 ---
 
@@ -630,6 +650,18 @@ Note:
 Note:
 - Cores permanently saturated
 - Mostly one-shot/rules mode overhead
+
+---
+
+### Full Remote Build
+
+![](assets/full_clean_remote_buck2_trace.png)
+
+Note:
+- 100 remote nodes
+  - mostly saturated
+  - some gaps
+  - queued (probably competing build)
 
 ---
 
@@ -732,6 +764,7 @@ Note:
 - GHC avoids unnecessary recompilation
 - ! Buck2: content hash
   - any `.hi` change
+  - want `.hi|.o` determinism (Matt/Zubin)
 - ! ABI hash
 - ! same trick as in Bazel
   - mark `.hi` as unused input
@@ -767,20 +800,23 @@ Note:
 
 <img src="assets/buck2_logo.svg" width="10%" style="float: right">
 
-- module granular <!-- .element: class="fragment" -->
-- avoid package boundaries <!-- .element: class="fragment" -->
+- extensible & scalable <!-- .element: class="fragment" -->
+- cross package boundaries <!-- .element: class="fragment" -->
+- incremental & parallel <!-- .element: class="fragment" -->
 - one-shoto mode overhead <!-- .element: class="fragment" -->
-- incremental <!-- .element: class="fragment" -->
-- parallel <!-- .element: class="fragment" -->
+- upstream contributions <!-- .element: class="fragment" -->
 
 Note:
-- Buck2: extensible & scalable
-- ! module granular build
-- ! avoid package boundaries
+- ! Buck2: extensible & scalable
+- ! cross package  module granular build
+- ! incremental (caching)
+  - and parallel (remote)
 - ! one-shot overhead
   - need compilation server
-- ! incremental (caching)
-- ! parallel (remote)
+- ! upstream (benefit OS)
+  - GHC
+  - Buck2
+  - Buck2 rules (planned)
 
 ---
 
@@ -789,11 +825,7 @@ Note:
 # Thank You
 
 Note:
-- collaboration
-  - Mercury (Ian-Woo Kim)
-  - Tweag SBG (Claudio Bley, myself)
-  - Tweag GHC (Torsten Schmits, Cheng Shao, Sjoerd Visscher)
-  - Well Typed (Matthew Pickering, Zubin Duggal)
+- thank you
 
           </textarea>
         </section>
