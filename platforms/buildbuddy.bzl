@@ -17,6 +17,7 @@ def _platforms(ctx):
             use_limited_hybrid = True,
             remote_execution_properties = {
                 "OSFamily": "Linux",
+                "workload-isolation-type": "podman",
                 "container-image": image,
                 "recycle-runner": True,
                 "nonroot-workspace": True,
