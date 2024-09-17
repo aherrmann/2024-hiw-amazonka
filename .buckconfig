@@ -21,3 +21,4 @@ ignore = .git, tmp
 
 [buck2]
 materializations = deferred
+restarter = true
